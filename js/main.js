@@ -353,7 +353,18 @@ async function prepareStage() {
   } else if (!state.tracker) {
     loading('Starting camera & body tracking…');
     state.tracker = new PoseTracker($('webcam'));
-    await state.tracker.init();
+    try {
+      await state.tracker.init();
+    } catch (e) {
+      state.tracker = null;
+      if (e.name === 'NotReadableError' || e.name === 'AbortError') {
+        throw new Error('📷 The camera is busy in another program or tab — close Zoom/Teams/other game tabs and try again. (Or pair a phone and use phone-only mode!)');
+      }
+      if (e.name === 'NotAllowedError') {
+        throw new Error('📷 Camera access was blocked — click the camera icon in the address bar and allow it.');
+      }
+      throw e;
+    }
   }
   loading(null);
 }

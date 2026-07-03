@@ -138,6 +138,23 @@ body {
 .tap-chip.tapping { background: var(--good); color: #06281f; font-weight: 800; }
 .lobby-transfer { min-height: 1.3em; font-weight: 700; color: var(--good); }
 
+.phone-row { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.phone-pair {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.07);
+}
+.phone-pair[hidden] { display: none; }
+.phone-pair img { width: 120px; height: 120px; border-radius: 8px; background: #fff; padding: 4px; }
+.phone-pair-info { text-align: left; font-size: 0.95rem; line-height: 1.6; }
+.phone-pair-info b { color: var(--yellow); letter-spacing: 0.2em; }
+#phone-status { font-weight: 700; color: var(--orange); }
+#phone-status.ok { color: var(--good); }
+#phone-only-label { cursor: pointer; color: var(--yellow); font-weight: 600; }
+
 /* ===== Lobby ===== */
 .room-code-box { font-size: 1.5rem; }
 .room-code-box span {

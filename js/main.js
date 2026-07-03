@@ -7,6 +7,8 @@ import { Room, makeRoomCode } from './multiplayer.js';
 import { detectBeat, refitOffset } from './beatdetect.js';
 import { sendSong, receiveSong } from './transfer.js';
 import { VideoCall } from './videochat.js';
+import { extractChoreography } from './choreoextract.js';
+import { PhoneLink, makePhoneCode } from './motion.js';
 
 const $ = (id) => document.getElementById(id);
 const CHAR_IMG = {
@@ -22,6 +24,8 @@ const state = {
   songId: SONGS[0].id,
   room: null,
   tracker: null,
+  phone: null,      // PhoneLink when a phone is paired
+  phoneOnly: false,
   player: null,
   game: null,
   peerFinish: null,
@@ -137,12 +141,64 @@ $('custom-file').onchange = async (e) => {
     $('chip-custom').textContent = `📁 ${getCustomSong().title}`;
     $('custom-info').hidden = false;
     $('custom-bpm').textContent = `Detected: ${Math.round(bpm)} BPM ✓`;
+    $('btn-tap').hidden = false;
     loading(null);
   } catch (err) {
     loading(null);
     alert('Could not analyze that file: ' + err.message);
   }
   e.target.value = ''; // allow re-picking the same file
+};
+
+// ===== phone as motion sensor (optional) =====
+$('btn-phone').onclick = async () => {
+  if (state.phone) { $('phone-pair').hidden = !$('phone-pair').hidden; return; }
+  const code = makePhoneCode();
+  state.phone = new PhoneLink();
+  state.phone.onConnect = () => {
+    const st = $('phone-status');
+    st.textContent = '✔ Phone connected!';
+    st.classList.add('ok');
+    $('phone-only-label').hidden = false;
+  };
+  try {
+    await state.phone.start(code);
+  } catch (e) {
+    state.phone = null;
+    $('phone-status').textContent = 'Connection failed: ' + e.message;
+    return;
+  }
+  const url = new URL('phone.html', location.href).href + '#' + code;
+  const qr = window.qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  $('qr-img').src = qr.createDataURL(5, 8);
+  $('phone-code').textContent = code;
+  $('phone-pair').hidden = false;
+  $('btn-phone').textContent = '📱 Phone pairing';
+};
+
+// Import real choreography from a dance video (moves + music from one file).
+$('chip-video').onclick = () => $('video-file').click();
+
+$('video-file').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const song = await extractChoreography(file, (msg) => loading(msg));
+    setCustomSong(song);
+    state.songId = 'custom';
+    selectSongChip($('chip-video'));
+    $('chip-video').textContent = `🎬 ${song.title}`;
+    $('custom-info').hidden = false;
+    $('custom-bpm').textContent = `${Math.round(song.bpm)} BPM · ${song.cues.length} real moves ✓`;
+    $('btn-tap').hidden = true; // tap tempo would break the extracted cue times
+    loading(null);
+  } catch (err) {
+    loading(null);
+    alert(err.message);
+  }
+  e.target.value = '';
 };
 
 // Tap tempo correction: tap the button on the beat; after you stop, the
@@ -177,6 +233,7 @@ $('btn-tap').onclick = () => {
 };
 
 $('btn-char-continue').onclick = async () => {
+  state.phoneOnly = !!(state.phone?.connected() && $('phone-only').checked);
   try {
     if (state.mode === 'solo') {
       await prepareStage();
@@ -220,6 +277,7 @@ async function enterLobby() {
           bpm: meta.bpm,
           offset: meta.offset,
           duration: meta.duration,
+          cues: meta.cues, // real choreography if the host imported a dance video
           bytes: arrayBuffer,
         });
       })
@@ -270,7 +328,7 @@ async function maybeStart() {
       const song = getCustomSong();
       await sendSong(
         room,
-        { title: song.title, bpm: song.bpm, offset: song.offset, duration: song.duration },
+        { title: song.title, bpm: song.bpm, offset: song.offset, duration: song.duration, cues: song.cues },
         song.bytes,
         (msg) => { $('lobby-transfer').textContent = msg; },
       );
@@ -288,7 +346,11 @@ async function maybeStart() {
 // ===== game =====
 async function prepareStage() {
   show('screen-game');
-  if (!state.tracker) {
+  if (state.phoneOnly) {
+    // phone-only mode plays without any camera
+    state.tracker?.stop();
+    state.tracker = null;
+  } else if (!state.tracker) {
     loading('Starting camera & body tracking…');
     state.tracker = new PoseTracker($('webcam'));
     await state.tracker.init();
@@ -341,7 +403,13 @@ function startGame(song, delaySec) {
     themBox.hidden = true;
   }
 
-  state.game = new Game({ tracker: state.tracker, player: state.player, ui });
+  state.game = new Game({
+    tracker: state.tracker,
+    player: state.player,
+    ui,
+    phone: state.phone,
+    phoneOnly: state.phoneOnly,
+  });
   state.game.onScore = (score, combo) => room?.sendScore(score, combo);
   state.game.onFinish = (summary) => {
     state.mySummary = summary;

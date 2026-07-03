@@ -13,6 +13,16 @@ const BONES = [
   [27, 31], [28, 32],
 ];
 
+// Shared factory — also used by choreography extraction on video files.
+export async function createLandmarker() {
+  const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
+  return PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+    runningMode: 'VIDEO',
+    numPoses: 1,
+  });
+}
+
 export class PoseTracker {
   constructor(videoEl) {
     this.video = videoEl;
@@ -30,12 +40,7 @@ export class PoseTracker {
     await new Promise((res) => (this.video.onloadedmetadata = res));
     await this.video.play();
 
-    const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
-    this.landmarker = await PoseLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
-      runningMode: 'VIDEO',
-      numPoses: 1,
-    });
+    this.landmarker = await createLandmarker();
   }
 
   // Call once per rendered frame; updates this.landmarks.

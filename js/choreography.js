@@ -31,8 +31,10 @@ export function getSong(id) {
   return SONGS.find((s) => s.id === id) ?? SONGS[0];
 }
 
-// Returns [{ time, moveId }] — cue times in seconds into the song.
+// Returns [{ time, moveId }] or [{ time, angles }] — cue times in seconds into the song.
 export function buildBeatMap(song) {
+  // choreography extracted from a dance video: use its real cues as-is
+  if (song.cues?.length) return song.cues.map((c) => ({ ...c }));
   const beat = 60 / song.bpm;
   const cues = [];
   let i = 0;

@@ -115,10 +115,16 @@ function scoreAgainst(playerAngles, targetAngles, weights) {
   return wsum > 0 ? total / wsum : 0;
 }
 
+// A "move" is either a built-in move id (string) or a raw descriptor
+// { angles, weights?, name? } — e.g. extracted from a dance video.
+export function resolveMove(m) {
+  return typeof m === 'string' ? MOVES[m] : m;
+}
+
 // Similarity 0..1 between the player's pose and a move.
 // The mirrored version also counts (the webcam view is mirrored, so be forgiving).
-export function scorePose(landmarks, moveId) {
-  const move = MOVES[moveId];
+export function scorePose(landmarks, moveOrId) {
+  const move = resolveMove(moveOrId);
   const player = extractAngles(landmarks);
   const s1 = scoreAgainst(player, move.angles, move.weights);
   const s2 = scoreAgainst(player, mirrorAngles(move.angles), move.weights);
@@ -135,8 +141,9 @@ export function grade(similarity) {
 // ===== Pictogram rendering (stick figure from the same angle data) =====
 const LIMB_LEN = { ua: 0.20, fa: 0.18, th: 0.24, sh: 0.24 };
 
-export function drawMovePictogram(canvas, moveId, color = '#ffd166') {
-  const move = MOVES[moveId];
+export function drawMovePictogram(canvas, moveOrId, color = '#ffd166') {
+  const move = resolveMove(moveOrId);
+  if (!move?.angles) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);

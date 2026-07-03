@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Salsa Duel — Yossi vs Samuel</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 </head>
 <body>
 
@@ -41,9 +42,22 @@
   <div class="custom-row">
     <button class="song-chip" id="chip-custom">📁 Custom song (your MP3)…</button>
     <input type="file" id="custom-file" accept="audio/*" hidden>
+    <button class="song-chip" id="chip-video">🎬 Dance video (real choreography)…</button>
+    <input type="file" id="video-file" accept="video/*" hidden>
     <div id="custom-info" class="custom-info" hidden>
       <span id="custom-bpm"></span>
       <button id="btn-tap" class="song-chip tap-chip">👏 Tap tempo</button>
+    </div>
+  </div>
+  <div class="phone-row">
+    <button class="song-chip" id="btn-phone">📱 Connect phone as motion sensor (optional)</button>
+    <div id="phone-pair" class="phone-pair" hidden>
+      <img id="qr-img" alt="QR code">
+      <div class="phone-pair-info">
+        <p>Scan with your phone camera, code: <b id="phone-code">----</b></p>
+        <p id="phone-status">Waiting for phone…</p>
+        <label id="phone-only-label" hidden><input type="checkbox" id="phone-only"> Phone-only mode (no camera needed)</label>
+      </div>
     </div>
   </div>
   <button id="btn-char-continue" class="big-btn" disabled>Continue</button>

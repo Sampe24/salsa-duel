@@ -192,6 +192,36 @@ body {
 .hud-combo { font-weight: 800; color: var(--good); min-height: 1.2em; }
 .hud-song { font-size: 1.05rem; font-weight: 600; opacity: 0.85; padding-top: 8px; }
 
+/* Rival cam (live opponent video, multiplayer) */
+.rival-cam-box {
+  position: absolute;
+  top: 96px;
+  right: 16px;
+  width: clamp(160px, 18vw, 260px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 3px solid var(--hot);
+  box-shadow: 0 4px 24px rgba(255, 77, 46, 0.5);
+  background: #000;
+  z-index: 5;
+}
+.rival-cam-box video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.rival-cam-label {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 3px 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--yellow);
+  background: linear-gradient(0deg, rgba(0,0,0,0.75), transparent);
+}
+
 .feedback {
   position: absolute;
   top: 34%;

@@ -31,6 +31,7 @@ export class Room {
     this.onScore = null;   // ({ score, combo })
     this.onFinish = null;  // ({ score, counts })
     this.onXfer = null;    // song-transfer signaling/data (see transfer.js)
+    this.onVideo = null;   // rival-cam signaling (see videochat.js)
   }
 
   async join(code, { character, isHost }) {
@@ -57,7 +58,8 @@ export class Room {
       .on('broadcast', { event: 'finish' }, ({ payload }) => {
         if (payload.id !== this.me.id) this.onFinish?.(payload);
       })
-      .on('broadcast', { event: 'xfer' }, ({ payload }) => this.onXfer?.(payload));
+      .on('broadcast', { event: 'xfer' }, ({ payload }) => this.onXfer?.(payload))
+      .on('broadcast', { event: 'video' }, ({ payload }) => this.onVideo?.(payload));
 
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Could not reach the game server')), 10000);
@@ -118,6 +120,10 @@ export class Room {
 
   sendXfer(payload) {
     this.channel.send({ type: 'broadcast', event: 'xfer', payload });
+  }
+
+  sendVideo(payload) {
+    this.channel.send({ type: 'broadcast', event: 'video', payload });
   }
 
   sendFinish(summary) {

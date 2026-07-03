@@ -6,6 +6,7 @@ import { SONGS, getSong, setCustomSong, getCustomSong } from './choreography.js'
 import { Room, makeRoomCode } from './multiplayer.js';
 import { detectBeat, refitOffset } from './beatdetect.js';
 import { sendSong, receiveSong } from './transfer.js';
+import { VideoCall } from './videochat.js';
 
 const $ = (id) => document.getElementById(id);
 const CHAR_IMG = {
@@ -50,8 +51,16 @@ $('btn-join').onclick = () => {
   openCharacterScreen();
 };
 
+function stopRivalCam() {
+  state.videoCall?.stop();
+  state.videoCall = null;
+  $('rival-cam').srcObject = null;
+  $('rival-cam-box').hidden = true;
+}
+
 document.querySelectorAll('.back-btn').forEach((b) => {
   b.onclick = () => {
+    stopRivalCam();
     state.room?.leave();
     state.room = null;
     state.game?.stop();
@@ -310,6 +319,15 @@ function startGame(song, delaySec) {
   const room = state.room;
   const themBox = $('hud-them');
   if (room?.peer) {
+    // rival cam: live video of your opponent while you battle
+    state.videoCall?.stop();
+    state.videoCall = new VideoCall(room);
+    $('rival-cam-label').textContent = `${CHAR_NAME[room.peer.character] ?? 'Rival'} 📹`;
+    state.videoCall.start(state.tracker.video.srcObject, (remoteStream) => {
+      $('rival-cam').srcObject = remoteStream;
+      $('rival-cam-box').hidden = false;
+    });
+
     themBox.hidden = false;
     $('hud-them-img').src = CHAR_IMG[room.peer.character] ?? '';
     $('hud-them-name').textContent = CHAR_NAME[room.peer.character] ?? 'Rival';
@@ -383,6 +401,7 @@ function showResults() {
 }
 
 $('btn-again').onclick = () => {
+  stopRivalCam();
   state.room?.leave();
   state.room = null;
   openCharacterScreen();

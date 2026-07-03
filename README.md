@@ -7,6 +7,7 @@ A webcam-based dance battle game (Just Dance style) — dance salsa moves in fro
 - **Two characters**: Yossi and Samuel.
 - **3 AI-generated salsa/latino tracks** (Google Lyria RealTime), each with beat-synced choreography.
 - **Online multiplayer**: create a room, share the 4-letter code, dance head-to-head with live scores (Supabase Realtime).
+- **Custom songs**: load any MP3 from your disk — the beat is detected automatically (with a tap-tempo fallback) and choreography is generated. In multiplayer only the host needs the file: it transfers peer-to-peer over WebRTC (never uploaded to a server), with a Realtime relay fallback for strict networks.
 - Scoring: Perfect / ¡Bien! / OK / Miss with combo multipliers.
 
 ## Play

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salsa Duel — Yossi vs Samuel</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== MENU ===== -->
+<section id="screen-menu" class="screen active">
+  <div class="menu-box">
+    <h1 class="game-title">SALSA<span>DUEL</span></h1>
+    <p class="tagline">Webcam dance battle &mdash; feel the latino heat! 🔥💃</p>
+    <button id="btn-solo" class="big-btn">🕺 Dance Solo</button>
+    <button id="btn-create" class="big-btn">🎉 Create Online Room</button>
+    <div class="join-row">
+      <input id="input-room-code" maxlength="4" placeholder="CODE" autocomplete="off">
+      <button id="btn-join" class="big-btn small">Join Room</button>
+    </div>
+    <p id="menu-error" class="error-msg"></p>
+  </div>
+</section>
+
+<!-- ===== CHARACTER SELECT ===== -->
+<section id="screen-character" class="screen">
+  <h2 class="screen-heading">Choose your dancer</h2>
+  <div class="char-row">
+    <div class="char-card" data-char="yossi">
+      <img src="assets/characters/yossi.png" alt="Yossi">
+      <h3>Yossi</h3>
+    </div>
+    <div class="char-card" data-char="samuel">
+      <img src="assets/characters/samuel.png" alt="Samuel">
+      <h3>Samuel</h3>
+    </div>
+  </div>
+  <h2 class="screen-heading small-heading">Pick your song</h2>
+  <div id="song-row" class="song-row"></div>
+  <button id="btn-char-continue" class="big-btn" disabled>Continue</button>
+  <button class="back-btn" data-back="screen-menu">← Back</button>
+</section>
+
+<!-- ===== LOBBY (online) ===== -->
+<section id="screen-lobby" class="screen">
+  <h2 class="screen-heading">Online room</h2>
+  <div class="room-code-box">Room code: <span id="lobby-code">----</span></div>
+  <div class="lobby-players">
+    <div class="lobby-slot" id="lobby-me">
+      <img src="" alt=""><p class="slot-name">You</p><p class="slot-status">…</p>
+    </div>
+    <div class="vs-flash">VS</div>
+    <div class="lobby-slot" id="lobby-them">
+      <img src="" alt=""><p class="slot-name">Waiting…</p><p class="slot-status"></p>
+    </div>
+  </div>
+  <p id="lobby-song" class="lobby-song"></p>
+  <button id="btn-ready" class="big-btn">I'm Ready!</button>
+  <p id="lobby-hint" class="hint">Share the room code with your friend. The game starts when both players are ready.</p>
+  <button class="back-btn" data-back="screen-menu">← Leave room</button>
+</section>
+
+<!-- ===== GAME ===== -->
+<section id="screen-game" class="screen">
+  <div class="stage">
+    <video id="webcam" playsinline muted></video>
+    <canvas id="stage-canvas"></canvas>
+
+    <div class="hud-top">
+      <div class="hud-player me">
+        <img id="hud-me-img" src="" alt="">
+        <div>
+          <div class="hud-name" id="hud-me-name">You</div>
+          <div class="hud-score" id="hud-me-score">0</div>
+          <div class="hud-combo" id="hud-me-combo"></div>
+        </div>
+      </div>
+      <div class="hud-song" id="hud-song-name"></div>
+      <div class="hud-player them" id="hud-them" hidden>
+        <div>
+          <div class="hud-name" id="hud-them-name">Rival</div>
+          <div class="hud-score" id="hud-them-score">0</div>
+        </div>
+        <img id="hud-them-img" src="" alt="">
+      </div>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+    <div id="countdown" class="countdown"></div>
+    <div id="calibration-hint" class="calibration-hint">📷 Step back so your whole body is visible!</div>
+
+    <div class="movebar">
+      <div class="hit-zone"><canvas id="hit-pictogram" width="110" height="110"></canvas></div>
+      <div id="move-track" class="move-track"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== RESULTS ===== -->
+<section id="screen-results" class="screen">
+  <h2 class="screen-heading" id="results-title">Results</h2>
+  <div class="results-row" id="results-row"></div>
+  <div class="results-stats" id="results-stats"></div>
+  <button id="btn-again" class="big-btn">Dance Again</button>
+  <button class="back-btn" data-back="screen-menu">← Menu</button>
+</section>
+
+<div id="loading-overlay" hidden><div class="spinner"></div><p id="loading-text">Loading…</p></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

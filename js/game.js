@@ -2,6 +2,7 @@
 import { drawStage } from './pose.js';
 import { scorePose, grade, drawMovePictogram, MOVES } from './scoring.js';
 import { buildBeatMap } from './choreography.js';
+import { sfxPerfect, sfxGood, sfxOk, sfxMiss, sfxJackpot, sfxCountdown } from './sfx.js';
 
 const CARD_SPEED = 180;      // px per second toward the hit zone
 const WINDOW_BEFORE = 0.5;   // seconds before cue time that scoring opens
@@ -26,6 +27,7 @@ export class Game {
     this.combo = 0;
     this.counts = { PERFECT: 0, '¡BIEN!': 0, OK: 0, MISS: 0 };
     this.running = true;
+    this._lastCount = null;
     this.ui.moveTrack.innerHTML = '';
     this.ui.meScore.textContent = '0';
     this.ui.meCombo.textContent = '';
@@ -57,9 +59,15 @@ export class Game {
 
     // countdown + calibration hint
     if (t < 0) {
-      this.ui.countdown.textContent = Math.ceil(-t);
+      const n = Math.ceil(-t);
+      if (n !== this._lastCount) {
+        this._lastCount = n;
+        sfxCountdown(false);
+      }
+      this.ui.countdown.textContent = n;
     } else if (t < 1 && this.ui.countdown.textContent) {
       this.ui.countdown.textContent = '¡VAMOS!';
+      sfxCountdown(true);
       setTimeout(() => (this.ui.countdown.textContent = ''), 700);
     }
     this.ui.calibrationHint.classList.toggle('show', t < 2 && !this.tracker.fullBodyVisible());
@@ -124,6 +132,13 @@ export class Game {
     } else {
       this.combo = 0;
     }
+
+    // feedback sounds — pitch climbs with the combo, milestones pay out like a slot machine
+    if (g.cls === 'perfect') sfxPerfect(this.combo);
+    else if (g.cls === 'good') sfxGood(this.combo);
+    else if (g.cls === 'ok') sfxOk();
+    else sfxMiss();
+    if (this.combo > 0 && this.combo % 5 === 0) sfxJackpot(this.combo);
     // feedback flash
     const fb = this.ui.feedback;
     fb.textContent = g.label;

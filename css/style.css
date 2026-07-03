@@ -131,6 +131,13 @@ body {
 }
 .song-chip.selected { background: var(--purple); border-color: var(--yellow); box-shadow: 0 0 18px rgba(123,44,191,0.7); }
 
+.custom-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.custom-info { display: flex; gap: 10px; align-items: center; }
+#custom-bpm { font-weight: 700; color: var(--good); }
+.tap-chip { border-color: var(--good); background: rgba(46, 196, 182, 0.18); }
+.tap-chip.tapping { background: var(--good); color: #06281f; font-weight: 800; }
+.lobby-transfer { min-height: 1.3em; font-weight: 700; color: var(--good); }
+
 /* ===== Lobby ===== */
 .room-code-box { font-size: 1.5rem; }
 .room-code-box span {

@@ -20,7 +20,14 @@ const SEQUENCE = [
   'hipsShake', 'clapHigh', 'pointHighLeft', 'armsUp',
 ];
 
+// User-provided song (custom MP3 with detected beat). Not in SONGS — it is
+// registered at runtime after analysis or after receiving it from the host.
+let customSong = null;
+export function setCustomSong(song) { customSong = song; }
+export function getCustomSong() { return customSong; }
+
 export function getSong(id) {
+  if (id === 'custom' && customSong) return customSong;
   return SONGS.find((s) => s.id === id) ?? SONGS[0];
 }
 
@@ -29,7 +36,8 @@ export function buildBeatMap(song) {
   const beat = 60 / song.bpm;
   const cues = [];
   let i = 0;
-  for (let t = 8 * beat; t < song.duration - 4; t += 2 * beat) {
+  const start = (song.offset ?? 0) + 8 * beat;
+  for (let t = start; t < song.duration - 4; t += 2 * beat) {
     cues.push({ time: t, moveId: SEQUENCE[i % SEQUENCE.length] });
     i++;
   }

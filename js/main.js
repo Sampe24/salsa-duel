@@ -2,8 +2,10 @@
 import { PoseTracker } from './pose.js';
 import { MusicPlayer } from './audio.js';
 import { Game } from './game.js';
-import { SONGS, getSong } from './choreography.js';
+import { SONGS, getSong, setCustomSong, getCustomSong } from './choreography.js';
 import { Room, makeRoomCode } from './multiplayer.js';
+import { detectBeat, refitOffset } from './beatdetect.js';
+import { sendSong, receiveSong } from './transfer.js';
 
 const $ = (id) => document.getElementById(id);
 const CHAR_IMG = {
@@ -62,10 +64,12 @@ document.querySelectorAll('.back-btn').forEach((b) => {
 // ===== character + song select =====
 function openCharacterScreen() {
   // joiner doesn't pick the song (host does)
+  const hide = state.mode === 'join' ? 'none' : '';
   $('song-row').parentElement.querySelectorAll('.small-heading').forEach((h) => {
-    h.style.display = state.mode === 'join' ? 'none' : '';
+    h.style.display = hide;
   });
-  $('song-row').style.display = state.mode === 'join' ? 'none' : '';
+  $('song-row').style.display = hide;
+  document.querySelector('.custom-row').style.display = hide;
   show('screen-character');
   updateContinue();
 }
@@ -92,6 +96,76 @@ for (const song of SONGS) {
 }
 
 function updateContinue() { $('btn-char-continue').disabled = !state.character; }
+
+// ===== custom song (user MP3 + automatic beat detection) =====
+function selectSongChip(chip) {
+  document.querySelectorAll('.song-chip').forEach((c) => c.classList.remove('selected'));
+  chip.classList.add('selected');
+}
+
+$('chip-custom').onclick = () => $('custom-file').click();
+
+$('custom-file').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    loading('Analyzing the beat… 🥁');
+    const bytes = await file.arrayBuffer();
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await actx.decodeAudioData(bytes.slice(0));
+    actx.close();
+    const { bpm, offset } = await detectBeat(audioBuffer);
+    setCustomSong({
+      id: 'custom',
+      title: file.name.replace(/\.[^.]+$/, ''),
+      bpm, offset,
+      duration: audioBuffer.duration,
+      audioBuffer,
+      bytes, // original file bytes, used for multiplayer transfer
+    });
+    state.songId = 'custom';
+    selectSongChip($('chip-custom'));
+    $('chip-custom').textContent = `📁 ${getCustomSong().title}`;
+    $('custom-info').hidden = false;
+    $('custom-bpm').textContent = `Detected: ${Math.round(bpm)} BPM ✓`;
+    loading(null);
+  } catch (err) {
+    loading(null);
+    alert('Could not analyze that file: ' + err.message);
+  }
+  e.target.value = ''; // allow re-picking the same file
+};
+
+// Tap tempo correction: tap the button on the beat; after you stop, the
+// grid offset is re-fitted to your tempo.
+let taps = [];
+let tapTimer = null;
+$('btn-tap').onclick = () => {
+  const btn = $('btn-tap');
+  btn.classList.add('tapping');
+  taps.push(performance.now());
+  taps = taps.slice(-16);
+  if (taps.length >= 4) {
+    const ints = taps.slice(1).map((t, i) => t - taps[i]).sort((a, b) => a - b);
+    const median = ints[Math.floor(ints.length / 2)];
+    const bpm = Math.round((60000 / median) * 10) / 10;
+    $('custom-bpm').textContent = `Tapping: ${Math.round(bpm)} BPM…`;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(async () => {
+      taps = [];
+      btn.classList.remove('tapping');
+      const song = getCustomSong();
+      if (!song) return;
+      song.bpm = bpm;
+      loading('Re-fitting beat grid…');
+      song.offset = await refitOffset(song.audioBuffer, bpm);
+      loading(null);
+      $('custom-bpm').textContent = `Set by tapping: ${Math.round(bpm)} BPM ✓`;
+    }, 2500);
+  } else {
+    $('custom-bpm').textContent = `Keep tapping… (${taps.length})`;
+  }
+};
 
 $('btn-char-continue').onclick = async () => {
   try {
@@ -127,7 +201,24 @@ async function enterLobby() {
   await room.join(code, { character: state.character, isHost: state.mode === 'host' });
   loading(null);
 
+  // Joiner: stand by to receive a custom song if the host picked one.
+  if (state.mode === 'join') {
+    receiveSong(room, (msg) => { $('lobby-transfer').textContent = msg; })
+      .then(({ meta, arrayBuffer }) => {
+        setCustomSong({
+          id: 'custom',
+          title: meta.title,
+          bpm: meta.bpm,
+          offset: meta.offset,
+          duration: meta.duration,
+          bytes: arrayBuffer,
+        });
+      })
+      .catch((e) => { $('lobby-transfer').textContent = 'Song transfer failed: ' + e.message; });
+  }
+
   $('lobby-code').textContent = code;
+  $('lobby-transfer').textContent = '';
   $('lobby-song').textContent = state.mode === 'host'
     ? `Song: ${getSong(state.songId).title}`
     : 'The host picks the song';
@@ -159,12 +250,30 @@ $('btn-ready').onclick = () => {
   maybeStart();
 };
 
-// Host starts the match once both are ready.
-function maybeStart() {
+// Host starts the match once both are ready (sending the custom song first if needed).
+let starting = false;
+async function maybeStart() {
   const room = state.room;
-  if (!room || !room.isHost || !room.bothReady()) return;
-  const { songId, startAtEpochMs } = room.sendStart(state.songId);
-  room.onStart({ songId, startAtEpochMs }); // broadcast self:false, so trigger locally
+  if (!room || !room.isHost || !room.bothReady() || starting) return;
+  starting = true;
+  try {
+    if (state.songId === 'custom') {
+      const song = getCustomSong();
+      await sendSong(
+        room,
+        { title: song.title, bpm: song.bpm, offset: song.offset, duration: song.duration },
+        song.bytes,
+        (msg) => { $('lobby-transfer').textContent = msg; },
+      );
+      $('lobby-transfer').textContent = 'Song delivered ✔';
+    }
+    const { songId, startAtEpochMs } = room.sendStart(state.songId);
+    room.onStart({ songId, startAtEpochMs }); // broadcast self:false, so trigger locally
+  } catch (e) {
+    $('lobby-transfer').textContent = 'Could not send song: ' + e.message;
+  } finally {
+    starting = false;
+  }
 }
 
 // ===== game =====

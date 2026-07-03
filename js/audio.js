@@ -13,6 +13,15 @@ export class MusicPlayer {
 
   async load(song) {
     this.usedFallback = false;
+    if (song.audioBuffer) { // custom song, already decoded
+      this.buffer = song.audioBuffer;
+      return;
+    }
+    if (song.bytes) { // custom song received as raw bytes (multiplayer joiner)
+      this.buffer = await this.ctx.decodeAudioData(song.bytes.slice(0));
+      song.audioBuffer = this.buffer;
+      return;
+    }
     try {
       const resp = await fetch(song.file);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

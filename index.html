@@ -38,6 +38,14 @@
   </div>
   <h2 class="screen-heading small-heading">Pick your song</h2>
   <div id="song-row" class="song-row"></div>
+  <div class="custom-row">
+    <button class="song-chip" id="chip-custom">📁 Custom song (your MP3)…</button>
+    <input type="file" id="custom-file" accept="audio/*" hidden>
+    <div id="custom-info" class="custom-info" hidden>
+      <span id="custom-bpm"></span>
+      <button id="btn-tap" class="song-chip tap-chip">👏 Tap tempo</button>
+    </div>
+  </div>
   <button id="btn-char-continue" class="big-btn" disabled>Continue</button>
   <button class="back-btn" data-back="screen-menu">← Back</button>
 </section>
@@ -56,6 +64,7 @@
     </div>
   </div>
   <p id="lobby-song" class="lobby-song"></p>
+  <p id="lobby-transfer" class="lobby-transfer"></p>
   <button id="btn-ready" class="big-btn">I'm Ready!</button>
   <p id="lobby-hint" class="hint">Share the room code with your friend. The game starts when both players are ready.</p>
   <button class="back-btn" data-back="screen-menu">← Leave room</button>
